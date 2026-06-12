@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitSec — Instant GitHub Security Audit</title>
+<style>
+  :root {
+    --bg: #0a0e14;
+    --surface: #111820;
+    --border: #1e2a36;
+    --text: #c9d1d9;
+    --muted: #6e7f8d;
+    --accent: #00d4aa;
+    --accent-dim: rgba(0,212,170,0.12);
+    --red: #ff5c5c;
+    --amber: #f0a500;
+    --green: #00d4aa;
+    --mono: 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+
+  .logo { font-family: var(--mono); font-size: 2.2rem; font-weight: 700; color: var(--accent); letter-spacing: -1px; margin-bottom: 0.4rem; }
+  .logo span { color: var(--muted); }
+  .tagline { color: var(--muted); font-size: 1rem; margin-bottom: 3rem; text-align: center; }
+
+  .search-box { width: 100%; max-width: 600px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; }
+  .search-box label { display: block; font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; }
+  .input-row { display: flex; gap: 0.6rem; }
+  .input-row input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-family: var(--mono); font-size: 0.9rem; padding: 0.65rem 0.9rem;
+    outline: none; transition: border-color 0.15s;
+  }
+  .input-row input:focus { border-color: var(--accent); }
+  .input-row input::placeholder { color: var(--muted); }
+  .btn { background: var(--accent); color: #0a0e14; border: none; border-radius: 6px; padding: 0.65rem 1.4rem; font-weight: 700; font-size: 0.9rem; cursor: pointer; white-space: nowrap; transition: opacity 0.15s; }
+  .btn:hover { opacity: 0.85; }
+
+  .hint { margin-top: 1rem; font-size: 0.78rem; color: var(--muted); }
+  .hint code { font-family: var(--mono); color: var(--accent); background: var(--accent-dim); padding: 1px 5px; border-radius: 3px; }
+
+  .how { margin-top: 3rem; display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; max-width: 600px; }
+  .pill { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 0.4rem 1rem; font-size: 0.78rem; color: var(--muted); }
+  .pill b { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="logo">git<span>sec</span></div>
+<p class="tagline">Instant security audit for any public GitHub repository</p>
+
+<div class="search-box">
+  <label>Repository URL or owner/repo</label>
+  <div class="input-row">
+    <input type="text" id="repo-input" placeholder="github.com/owner/repo  or  owner/repo" autocomplete="off" />
+    <button class="btn" onclick="goScan()">Scan →</button>
+  </div>
+  <p class="hint">
+    URL trick: replace <code>github.com</code> with <code>gitsec.dev</code> in any repo URL
+  </p>
+</div>
+
+<div class="how">
+  <div class="pill">🔑 <b>Secret detection</b></div>
+  <div class="pill">📦 <b>CVE dependency check</b></div>
+  <div class="pill">⚙️ <b>Misconfig scan</b></div>
+  <div class="pill">📜 <b>Commit hygiene</b></div>
+</div>
+
+<script>
+function parseInput(val) {
+  val = val.trim().replace(/^https?:\/\//, '').replace(/^(github\.com|gitsec\.dev)\//, '');
+  val = val.split('/tree/')[0].replace(/\/$/, '');
+  const parts = val.split('/');
+  if (parts.length >= 2) return { owner: parts[0], repo: parts[1] };
+  return null;
+}
+
+function goScan() {
+  const val = document.getElementById('repo-input').value;
+  const parsed = parseInput(val);
+  if (!parsed) { alert('Enter a valid GitHub repo URL or owner/repo'); return; }
+  window.location.href = `/${parsed.owner}/${parsed.repo}`;
+}
+
+document.getElementById('repo-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') goScan();
+});
+</script>
+</body>
+</html>

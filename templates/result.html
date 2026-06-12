@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitSec — {{ owner }}/{{ repo }}</title>
+<style>
+  :root {
+    --bg: #0a0e14;
+    --surface: #111820;
+    --surface2: #15202e;
+    --border: #1e2a36;
+    --text: #c9d1d9;
+    --muted: #6e7f8d;
+    --accent: #00d4aa;
+    --accent-dim: rgba(0,212,170,0.12);
+    --critical: #ff3b3b;
+    --high: #ff7b39;
+    --medium: #f0a500;
+    --low: #4fc1ff;
+    --info: #6e7f8d;
+    --mono: 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; padding: 0; }
+
+  /* ── Top nav ── */
+  .nav { display: flex; align-items: center; gap: 1rem; padding: 1rem 2rem; border-bottom: 1px solid var(--border); }
+  .nav-logo { font-family: var(--mono); font-size: 1.2rem; font-weight: 700; color: var(--accent); text-decoration: none; }
+  .nav-logo span { color: var(--muted); }
+  .nav-repo { font-family: var(--mono); font-size: 0.9rem; color: var(--muted); }
+  .nav-repo a { color: var(--text); text-decoration: none; }
+  .nav-repo a:hover { color: var(--accent); }
+
+  /* ── Layout ── */
+  .container { max-width: 860px; margin: 0 auto; padding: 2rem; }
+
+  /* ── Loading state ── */
+  #loading { text-align: center; padding: 4rem 2rem; }
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1.5rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-steps { font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem; }
+
+  /* ── Score ring ── */
+  .score-section { display: flex; align-items: center; gap: 2rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 1.5rem; }
+  .score-ring { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring .score-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.6rem; font-weight: 700; font-family: var(--mono); }
+  .score-info h1 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.25rem; }
+  .score-info p { font-size: 0.85rem; color: var(--muted); }
+  .meta-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+  .meta-pill { font-size: 0.75rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 0.25rem 0.75rem; color: var(--muted); }
+
+  /* ── Summary counts ── */
+  .counts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+  .count-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem 1rem; text-align: center; }
+  .count-card .num { font-size: 1.6rem; font-weight: 700; font-family: var(--mono); }
+  .count-card .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.2rem; }
+  .c-critical .num { color: var(--critical); }
+  .c-high .num { color: var(--high); }
+  .c-medium .num { color: var(--medium); }
+  .c-low .num { color: var(--low); }
+
+  /* ── Findings ── */
+  .section-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.75rem; margin-top: 1.75rem; }
+  .finding { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: 0.6rem; border-left: 3px solid transparent; }
+  .finding.critical { border-left-color: var(--critical); }
+  .finding.high { border-left-color: var(--high); }
+  .finding.medium { border-left-color: var(--medium); }
+  .finding.low { border-left-color: var(--low); }
+  .finding.info { border-left-color: var(--info); }
+
+  .finding-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+  .badge { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 4px; }
+  .badge.critical { background: rgba(255,59,59,0.15); color: var(--critical); }
+  .badge.high { background: rgba(255,123,57,0.15); color: var(--high); }
+  .badge.medium { background: rgba(240,165,0,0.15); color: var(--medium); }
+  .badge.low { background: rgba(79,193,255,0.15); color: var(--low); }
+  .badge.info { background: rgba(110,127,141,0.15); color: var(--info); }
+  .cat-badge { font-size: 0.68rem; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; }
+  .finding-title { font-size: 0.92rem; font-weight: 600; }
+  .finding-detail { font-size: 0.82rem; color: var(--muted); line-height: 1.5; margin-top: 0.3rem; }
+  .finding-file { font-family: var(--mono); font-size: 0.75rem; color: var(--accent); margin-top: 0.35rem; }
+
+  /* ── Error state ── */
+  .error-box { background: rgba(255,59,59,0.08); border: 1px solid rgba(255,59,59,0.3); border-radius: 8px; padding: 1.2rem 1.5rem; color: #ff8080; font-size: 0.9rem; }
+
+  /* ── Footer ── */
+  .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--muted); text-align: center; }
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  #results { display: none; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">git<span>sec</span></a>
+  <span class="nav-repo">
+    <a href="https://github.com/{{ owner }}/{{ repo }}" target="_blank">{{ owner }}/{{ repo }}</a>
+  </span>
+</nav>
+
+<div class="container">
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p style="color: var(--text); font-size: 0.95rem;">Scanning <strong>{{ owner }}/{{ repo }}</strong></p>
+    <div class="loading-steps" id="step-text">Fetching repository metadata...</div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+
+    <div id="error-container"></div>
+
+    <div class="score-section" id="score-section" style="display:none">
+      <div class="score-ring">
+        <svg width="90" height="90" viewBox="0 0 90 90">
+          <circle cx="45" cy="45" r="38" fill="none" stroke="var(--border)" stroke-width="7"/>
+          <circle id="score-arc" cx="45" cy="45" r="38" fill="none" stroke="var(--accent)" stroke-width="7"
+                  stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round"
+                  style="transition: stroke-dashoffset 1s ease, stroke 0.5s ease"/>
+        </svg>
+        <div class="score-num" id="score-num">—</div>
+      </div>
+      <div class="score-info">
+        <h1 id="score-label">Security Score</h1>
+        <p id="repo-desc"></p>
+        <div class="meta-pills" id="meta-pills"></div>
+      </div>
+    </div>
+
+    <div class="counts" id="counts"></div>
+
+    <div id="findings-container"></div>
+
+    <div class="footer">
+      Built by ByteFortix Security·
+      Surface scan only — not a full pentest ·
+      <a href="/">Scan another repo →</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const OWNER = "{{ owner }}";
+const REPO = "{{ repo }}";
+
+// Loading step messages
+const steps = [
+  "Fetching repository metadata...",
+  "Scanning file tree for risky files...",
+  "Checking for hardcoded secrets...",
+  "Analysing dependency files...",
+  "Reviewing commit history...",
+  "Calculating risk score...",
+];
+let stepIdx = 0;
+const stepInterval = setInterval(() => {
+  if (stepIdx < steps.length - 1) stepIdx++;
+  document.getElementById('step-text').textContent = steps[stepIdx];
+}, 1800);
+
+function scoreColor(s) {
+  if (s >= 80) return '#00d4aa';
+  if (s >= 60) return '#f0a500';
+  if (s >= 40) return '#ff7b39';
+  return '#ff3b3b';
+}
+
+function scoreLabel(s) {
+  if (s >= 80) return 'Low Risk';
+  if (s >= 60) return 'Moderate Risk';
+  if (s >= 40) return 'High Risk';
+  return 'Critical Risk';
+}
+
+function renderScore(score) {
+  const circumference = 238.76;
+  const offset = circumference - (score / 100) * circumference;
+  const arc = document.getElementById('score-arc');
+  arc.style.stroke = scoreColor(score);
+  setTimeout(() => { arc.style.strokeDashoffset = offset; }, 100);
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-num').style.color = scoreColor(score);
+  document.getElementById('score-label').textContent = scoreLabel(score);
+}
+
+function renderMeta(data) {
+  const pills = document.getElementById('meta-pills');
+  if (data.language) pills.innerHTML += `<span class="meta-pill">🔤 ${data.language}</span>`;
+  if (data.stars) pills.innerHTML += `<span class="meta-pill">⭐ ${data.stars.toLocaleString()}</span>`;
+  if (data.dep_ecosystems.length) pills.innerHTML += `<span class="meta-pill">📦 ${data.dep_ecosystems.join(', ')}</span>`;
+  document.getElementById('repo-desc').textContent = data.description || '';
+}
+
+function renderCounts(findings) {
+  const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+  findings.forEach(f => { if (counts[f.severity] !== undefined) counts[f.severity]++; });
+  const container = document.getElementById('counts');
+  const labels = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low / Info' };
+  Object.entries(counts).forEach(([sev, n]) => {
+    container.innerHTML += `
+      <div class="count-card c-${sev}">
+        <div class="num">${n}</div>
+        <div class="label">${labels[sev]}</div>
+      </div>`;
+  });
+}
+
+function renderFindings(findings) {
+  // Group by category
+  const categories = { secrets: [], misconfig: [], deps: [], hygiene: [] };
+  findings.forEach(f => {
+    if (categories[f.category]) categories[f.category].push(f);
+    else categories.hygiene.push(f);
+  });
+
+  const titles = { secrets: '🔑 Secrets & credentials', misconfig: '⚙️ Misconfigurations', deps: '📦 Dependency vulnerabilities', hygiene: '📜 Commit hygiene' };
+  const container = document.getElementById('findings-container');
+
+  Object.entries(categories).forEach(([cat, items]) => {
+    if (!items.length) return;
+    container.innerHTML += `<div class="section-title">${titles[cat]}</div>`;
+    items.forEach(f => {
+      container.innerHTML += `
+        <div class="finding ${f.severity}">
+          <div class="finding-header">
+            <span class="badge ${f.severity}">${f.severity}</span>
+            <span class="cat-badge">${f.category}</span>
+            <span class="finding-title">${f.title}</span>
+          </div>
+          <div class="finding-detail">${f.detail}</div>
+          ${f.file ? `<div class="finding-file">📄 ${f.file}${f.line ? `:${f.line}` : ''}</div>` : ''}
+        </div>`;
+    });
+  });
+}
+
+// Fetch scan results
+fetch(`/api/scan/${OWNER}/${REPO}`)
+  .then(r => r.json())
+  .then(data => {
+    clearInterval(stepInterval);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+
+    if (data.error) {
+      document.getElementById('error-container').innerHTML =
+        `<div class="error-box">⚠️ ${data.error}</div>`;
+      return;
+    }
+
+    document.getElementById('score-section').style.display = 'flex';
+    renderScore(data.score);
+    renderMeta(data);
+    renderCounts(data.findings);
+    renderFindings(data.findings);
+  })
+  .catch(err => {
+    clearInterval(stepInterval);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('error-container').innerHTML =
+      `<div class="error-box">⚠️ Scan failed: ${err.message}</div>`;
+  });
+</script>
+</body>
+</html>
